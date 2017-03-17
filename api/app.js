@@ -26,7 +26,7 @@ router.get('/proxy', async(ctx, next) => {
     let result = await Proxy.findOne({isValid: true}).then((result) => {
         if(!result){
             ctx.status=404;
-            return ''
+            return '';
         }
         let protocol = result.protocol[0];
         let ip       = result.ip;
