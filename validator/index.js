@@ -1,13 +1,14 @@
-const exec     = require('child_process').exec;
-const config   = require('../profile/config');
-const Proxy    = require('../db/model').Proxy;
-const kue      = require('kue');
-const mongoose = require('mongoose');
-const storage  = require('../storage');
-const ObjectId = mongoose.Types.ObjectId;
+const exec        = require('child_process').exec;
+const config      = require('../profile/config');
+const Proxy       = require('../db/model').Proxy;
+const kue         = require('kue');
+const mongoose    = require('mongoose');
+const storage     = require('../storage');
+const ObjectId    = mongoose.Types.ObjectId;
+const queuePrefix = 'proxy:tester';
 
 const queue = kue.createQueue({
-    prefix   : 'proxy:tester',
+    prefix   : queuePrefix,
     jobEvents: false,
     redis    : {
         port: config.redisConfig.port,
@@ -16,8 +17,8 @@ const queue = kue.createQueue({
     }
 });
 
-queue.process('proxy:test', function (job, done) {
-    console.log('Processing job ' + job.id);
+queue.process(queuePrefix, function (job, done) {
+    console.log('Processing ' + queuePrefix + ' job ' + job.id);
     let protocol = job.data.protocol;
     let ip       = job.data.ip;
     let port     = job.data.port;
@@ -36,7 +37,7 @@ queue.on('job complete', function (id, result) {
         if (err) return;
         job.remove(function (err) {
             if (err) throw err;
-            console.log('removed completed job #%d', job.id);
+            console.log('removed completed ' + queuePrefix + ' job #%d', job.id);
         });
     });
 }).on('job failed', function (id, result) {
@@ -44,7 +45,7 @@ queue.on('job complete', function (id, result) {
         if (err) return;
         job.remove(function (err) {
             if (err) throw err;
-            console.log('removed faild job #%d', job.id);
+            console.log('removed faild ' + queuePrefix + ' job #%d', job.id);
         });
     });
 });
@@ -75,7 +76,7 @@ function testProxy(protocol, proxyIp, proxyPort) {
  * @param proxyData.port
  */
 exports.push2ProxyTestPool = function (proxyData) {
-    queue.createJob('proxy:test', proxyData).removeOnComplete(true).save();
+    queue.createJob(queuePrefix, proxyData).removeOnComplete(true).save();
 };
 //
 // function queryProxys(page, limit) {

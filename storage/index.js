@@ -16,7 +16,7 @@ const queue = kue.createQueue({
 });
 
 queue.process(queuePrefix, function (job, done) {
-    console.log('Processing job ' + job.id);
+    console.log('Processing ' + queuePrefix + ' job ' + job.id);
     var data = {
         source    : job.data.source,
         ip        : job.data.ip,
@@ -42,7 +42,7 @@ queue.on('job complete', function (id, result) {
         if (err) return;
         job.remove(function (err) {
             if (err) throw err;
-            console.log('removed completed job #%d', job.id);
+            console.log('removed completed ' + queuePrefix + ' job #%d', job.id);
         });
     });
 }).on('job failed', function (id, result) {
@@ -50,11 +50,11 @@ queue.on('job complete', function (id, result) {
         if (err) return;
         job.remove(function (err) {
             if (err) throw err;
-            console.log('removed faild job #%d', job.id);
+            console.log('removed faild ' + queuePrefix + ' job #%d', job.id);
         });
     });
 });
 
-exports.push2StoragePool = function(data){
+exports.push2StoragePool = function (data) {
     queue.createJob(queuePrefix, data).removeOnComplete(true).save();
 }
