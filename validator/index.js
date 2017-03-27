@@ -1,42 +1,33 @@
 const exec     = require('child_process').exec;
+const config   = require('../profile/config');
 const Proxy    = require('../db/model').Proxy;
-const kue    = require('kue');
+const kue      = require('kue');
 const mongoose = require('mongoose');
+const storage  = require('../storage');
 const ObjectId = mongoose.Types.ObjectId;
 
 const queue = kue.createQueue({
     prefix   : 'proxy:tester',
     jobEvents: false,
     redis    : {
-        port: 6379,
-        host: '192.168.99.100',
-        db  : 1
+        port: config.redisConfig.port,
+        host: config.redisConfig.host,
+        db  : config.redisConfig.db
     }
 });
 
-queue.process('proxy:test', function(job,done){
+queue.process('proxy:test', function (job, done) {
     console.log('Processing job ' + job.id);
     let protocol = job.data.protocol;
     let ip       = job.data.ip;
     let port     = job.data.port;
     return testProxy(protocol, ip, port).then((result) => {
-        return Proxy.update({_id: ObjectId(job.data.recordId)}, {
-            $set: {
-                validateAt: new Date(),
-                isValid   : true
-            }
-        })
-    }).then(function () {
+        job.data.validateAt = new Date();
+        storage.push2StoragePool(job.data);
         return done();
-    }).catch(() => {
+    }).catch((err) => {
         console.error(`${protocol}://${ip}:${port} is invalid! drop Now!`);
         done();
-        return Proxy.update({_id: ObjectId(job.data.recordId)}, {
-            $set: {
-                validateAt: new Date(),
-                isValid   : false
-            }
-        })
     })
 });
 
@@ -59,7 +50,6 @@ queue.on('job complete', function (id, result) {
 });
 
 
-
 function testProxy(protocol, proxyIp, proxyPort) {
     let command = `curl –connect-timeout 2 -m 1 -x ${protocol}://${proxyIp}:${proxyPort} "http://ip.cn"`;
     return new Promise(function (resolve, reject) {
@@ -78,28 +68,38 @@ function testProxy(protocol, proxyIp, proxyPort) {
     })
 }
 
-function queryProxys(page, limit) {
-    Proxy.find({isValid: false}).limit(limit).skip(page * limit).then((result) => {
-        if (!Array.isArray(result) || result.length == 0) {
-            console.log('All proxy test over!');
-            return;
-        }
-        result.forEach((item) => {
-            let protocol = item.protocol[0];
-            let ip       = item.ip;
-            let port     = item.port;
-            let jobData  = {recordId: result._id, protocol: protocol, ip: ip, port: port};
-            let job      = queue.createJob('proxy:test',jobData).delay(200).removeOnComplete(true).save();
-        });
-        setTimeout(function () {
-            queryProxys(page + 1, limit)
-        }, 1000);
-    }).catch(err => {
-        console.error(err);
-    });
+/**
+ * @param proxyData
+ * @param proxyData.ip
+ * @param proxyData.protocol
+ * @param proxyData.port
+ */
+exports.push2ProxyTestPool = function (proxyData) {
+    queue.createJob('proxy:test', jobData).delay(200).removeOnComplete(true).save();
 }
-
 //
-exports.start = function(){
-    queryProxys(1, 10);
-}
+// function queryProxys(page, limit) {
+//     Proxy.find({isValid: false}).limit(limit).skip(page * limit).then((result) => {
+//         if (!Array.isArray(result) || result.length == 0) {
+//             console.log('All proxy test over!');
+//             return;
+//         }
+//         result.forEach((item) => {
+//             let protocol = item.protocol[0];
+//             let ip       = item.ip;
+//             let port     = item.port;
+//             let jobData  = {recordId: result._id, protocol: protocol, ip: ip, port: port};
+//             let job      = queue.createJob('proxy:test',jobData).delay(200).removeOnComplete(true).save();
+//         });
+//         setTimeout(function () {
+//             queryProxys(page + 1, limit)
+//         }, 1000);
+//     }).catch(err => {
+//         console.error(err);
+//     });
+// }
+//
+// //
+// exports.start = function(){
+//     queryProxys(1, 10);
+// }

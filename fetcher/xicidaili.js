@@ -1,7 +1,7 @@
 'use strict'
 const phantom    = require('phantom');
 const Bottleneck = require("bottleneck");
-const Proxy      = require('../db/model').Proxy;
+const validator  = require('../validator');
 
 const host = 'http://www.xicidaili.com';
 let count  = 0;
@@ -55,12 +55,7 @@ function fetchIps(pageNum) {
                 validateAt: null,
                 createdAt : new Date()
             };
-            Proxy.create(data, function (err, result) {
-                if (err) console.log(err);
-
-            });
-
-            //console.dir(data);
+            validator.push2ProxyTestPool(data);
         });
     });
 }

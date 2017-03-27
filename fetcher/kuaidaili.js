@@ -2,7 +2,8 @@
 const Crawler    = require('crawler');
 const phantom    = require('phantom');
 const Bottleneck = require("bottleneck");
-const Proxy      = require('../db/model').Proxy;
+//const Proxy      = require('../db/model').Proxy;
+const validator  = require('../validator');
 
 const host = 'http://www.kuaidaili.com';
 
@@ -77,11 +78,11 @@ function fetchIps(pageNum) {
                     validateAt: null,
                     createdAt : new Date()
                 };
-                Proxy.create(data, function (err, result) {
-                    if (err) console.log(err);
-
-                });
-
+                validator.push2ProxyTestPool(data);
+                // Proxy.create(data, function (err, result) {
+                //     if (err) console.log(err);
+                //
+                // });
             });
         });
 }

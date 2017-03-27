@@ -1,6 +1,8 @@
-var mongoose = require('mongoose');
-var Schema   = mongoose.Schema;
-mongoose.connect('mongodb://192.168.99.100:27017/proxy_ip',
+const mongoose = require('mongoose');
+const config   = require('../profile/config')
+const Schema   = mongoose.Schema;
+
+mongoose.connect(config.mongodbConfig.connectUrl,
     {
         db    : {native_parser: true},
         server: {
@@ -16,7 +18,7 @@ mongoose.connect('mongodb://192.168.99.100:27017/proxy_ip',
     });
 
 mongoose.set('debug', false);
-var proxySchema = new Schema({
+const proxySchema = new Schema({
     ip        : String,
     port      : String,
     source    : String,
