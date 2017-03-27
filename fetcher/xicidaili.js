@@ -11,16 +11,21 @@ phantom.create(['--ignore-ssl-errors=yes', '--load-images=yes']).then(instance =
     return instance.createPage();
 }).then(p => {
     page = p;
+
 }).catch(err => {
     console.error(err);
 });
 
 function fetchIps(pageNum) {
     let url = `${host}/nn/${pageNum}/`;
-    return page.setting('javascriptEnabled').then(() => {
-        return page.open(url)
-    }).then(status => {
-        return page.includeJs('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js');
+    console.log('fetching xicidaili url:' + url);
+    return page.setting('javascriptEnabled').then(()=>{
+        return page.open(url).then(status => {
+            if (status === 'fail') {
+                console.warn('[' + host + '] openurl:' + url + ' status:' + status);
+            }
+            return page.includeJs('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js');
+        })
     }).then((status) => {
         console.log(url + ' fetched!');
         return page.evaluate(function () {
@@ -62,10 +67,15 @@ function fetchIps(pageNum) {
 
 
 exports.start = function () {
-    let bn = new Bottleneck(2, 1000);
-    setTimeout(function () {
+    if (page) {
+        let bn = new Bottleneck(3, 1000);
         for (let i = 1; i < 1531; i++) {
             bn.schedule(fetchIps, i);
         }
-    }, 1000);
+    } else {
+        setTimeout(function () {
+            exports.start();
+        }, 1000);
+    }
+
 }

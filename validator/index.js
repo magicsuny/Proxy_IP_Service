@@ -75,8 +75,8 @@ function testProxy(protocol, proxyIp, proxyPort) {
  * @param proxyData.port
  */
 exports.push2ProxyTestPool = function (proxyData) {
-    queue.createJob('proxy:test', jobData).delay(200).removeOnComplete(true).save();
-}
+    queue.createJob('proxy:test', proxyData).removeOnComplete(true).save();
+};
 //
 // function queryProxys(page, limit) {
 //     Proxy.find({isValid: false}).limit(limit).skip(page * limit).then((result) => {

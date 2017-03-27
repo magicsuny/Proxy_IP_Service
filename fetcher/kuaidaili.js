@@ -2,7 +2,6 @@
 const Crawler    = require('crawler');
 const phantom    = require('phantom');
 const Bottleneck = require("bottleneck");
-//const Proxy      = require('../db/model').Proxy;
 const validator  = require('../validator');
 
 const host = 'http://www.kuaidaili.com';
@@ -88,11 +87,15 @@ function fetchIps(pageNum) {
 }
 
 exports.start = function () {
-    let bn = new Bottleneck(2, 1000);
-    setTimeout(function () {
+    if (page) {
+        let bn = new Bottleneck(3, 1000);
         for (let i = 1; i < 1536; i++) {
             bn.schedule(fetchIps, i);
         }
-    }, 1000);
-}
+    } else {
+        setTimeout(function () {
+            exports.start();
+        }, 1000);
+    }
 
+}
