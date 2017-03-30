@@ -3,7 +3,10 @@ const xicidaili = require('./xicidaili.js');
 const schedule  = require('node-schedule');
 
 
-//schedule.scheduleJob('* * */12 * *', function(){
+schedule.scheduleJob('* * */12 * *', function(){
     kuaidaili.start();
-    //xicidaili.start();
-//});
+    xicidaili.start();
+});
+
+kuaidaili.start();
+xicidaili.start();
